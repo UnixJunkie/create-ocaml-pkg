@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 
+set -x
+
 # requires fpm for package creation; cf. https://github.com/jordansissel/fpm
 
-wget http://caml.inria.fr/pub/distrib/ocaml-4.01/ocaml-4.01.0.tar.gz
-tar xzf ocaml-4.01.0.tar.gz
-cd ocaml-4.01.0
-./configure -prefix /usr/local/ocaml-4.01.0
+# TODO:cd to you OCaml source tree
+
+PREFIX=/usr/local/ocaml-destdir
+./configure -prefix $PREFIX
 make opt.opt
-sudo su - # ROOT FROM NOW ON
-make install
+# Install to a separate directory, for fpm to capture later on
+DESTDIR=/tmp/ocaml-destdir-test
+mkdir -p $DESTDIR
+make install DESTDIR=$DESTDIR
 # give read and exec perms to group and others
-find /usr/local/ocaml-4.01.0/ -readable   | xargs -L1 chmod go+r
-find /usr/local/ocaml-4.01.0/ -executable | xargs -L1 chmod go+x
-exit # NO MORE ROOT
-# create package, change deb to rpm if you need
-fpm -s dir -t deb -n ocaml-4.01.0 /usr/local/ocaml-4.01.0
+find $DESTDIR -readable   | xargs -L1 chmod go+r
+find $DESTDIR -executable | xargs -L1 chmod go+x
+
+#sudo rpm -e ocaml-destdir-1.0-1.x86_64 # uninstall previous
+#\rm ocaml-destdir-1.0-1.x86_64.rpm # rm previously created package
+
+# create package, change deb to rpm (or rpm to deb) if you need
+fpm -s dir -t rpm -n ocaml-destdir -C $DESTDIR usr
